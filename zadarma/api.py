@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 __version__ = '1.0.0'
+import sys
 from hashlib import sha1, md5
 from collections import OrderedDict
 if sys.version_info.major > 2:
