@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 __version__ = '1.0.0'
+import sys
 from hashlib import sha1, md5
 from collections import OrderedDict
-from urllib.parse import urlencode
+if sys.version_info.major > 2:
+    from urllib.parse import urlencode
+else:
+    from urllib import urlencode
 import hmac
 import requests
 import base64
@@ -67,5 +71,9 @@ class ZadarmaAPI(object):
         md5hash = md5(params_string.encode('utf8')).hexdigest()
         data = method + params_string + md5hash
         hmac_h = hmac.new(self.secret.encode('utf8'), data.encode('utf8'), sha1)
-        auth = self.key + ':' + base64.b64encode(bytes(hmac_h.hexdigest(), 'utf8')).decode()
+        if sys.version_info.major > 2:
+            bts = bytes(hmac_h.hexdigest(), 'utf8')
+        else:
+            bts = bytes(hmac_h.hexdigest()).encode('utf8')
+        auth = self.key + ':' + base64.b64encode(bts).decode()
         return auth
