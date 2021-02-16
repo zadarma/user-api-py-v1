@@ -28,6 +28,35 @@ class ZadarmaAPI(object):
         if is_sandbox:
             self.__url_api = 'https://api-sandbox.zadarma.com'
 
+    def http_build_query(self, data):
+        parents = list()
+        pairs = dict()
+
+        def renderKey(parents):
+            depth, outStr = 0, ''
+            for x in parents:
+                s = "[%s]" if depth > 0 or isinstance(x, int) else "%s"
+                outStr += s % str(x)
+                depth += 1
+            return outStr
+
+        def r_urlencode(data):
+            if isinstance(data, list) or isinstance(data, tuple):
+                for i in range(len(data)):
+                    parents.append(i)
+                    r_urlencode(data[i])
+                    parents.pop()
+            elif isinstance(data, dict):
+                for key, value in data.items():
+                    parents.append(key)
+                    r_urlencode(value)
+                    parents.pop()
+            else:
+                pairs[renderKey(parents)] = str(data)
+
+            return pairs
+        return urlencode(r_urlencode(data))
+
     def call(self, method, params={}, request_type='GET', format='json', is_auth=True):
         """
         Function for send API request
@@ -48,15 +77,19 @@ class ZadarmaAPI(object):
             auth_str = self.__get_auth_string_for_header(method, params)
 
         result = False
+
+        sorted_dict_params = OrderedDict(sorted(params.items()))
+        params_string = self.http_build_query(sorted_dict_params)
+
         if request_type == 'GET':
-            sorted_dict_params = OrderedDict(sorted(params.items()))
-            params_string = urlencode(sorted_dict_params)
             request_url = self.__url_api + method + '?' + params_string
             result = requests.get(request_url, headers={'Authorization': auth_str})
         elif request_type == 'POST':
-            result = requests.post(self.__url_api + method, headers={'Authorization': auth_str}, data=params)
+            result = requests.post(self.__url_api + method, headers={'Authorization': auth_str}, data=params_string)
         elif request_type == 'PUT':
-            result = requests.put(self.__url_api + method, headers={'Authorization': auth_str}, data=params)
+            result = requests.put(self.__url_api + method, headers={'Authorization': auth_str}, data=params_string)
+        elif request_type == 'DELETE':
+            result = requests.delete(self.__url_api + method, headers={'Authorization': auth_str}, data=params_string)
         print("result: " + str(result.text))
         return result.text
 
@@ -67,7 +100,7 @@ class ZadarmaAPI(object):
         :return: auth header
         """
         sorted_dict_params = OrderedDict(sorted(params.items()))
-        params_string = urlencode(sorted_dict_params)
+        params_string = self.http_build_query(sorted_dict_params)
         md5hash = md5(params_string.encode('utf8')).hexdigest()
         data = method + params_string + md5hash
         hmac_h = hmac.new(self.secret.encode('utf8'), data.encode('utf8'), sha1)
