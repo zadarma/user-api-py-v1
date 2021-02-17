@@ -1,16 +1,11 @@
-# -*- coding: utf-8 -*-
 __version__ = '1.0.0'
 import sys
 from hashlib import sha1, md5
 from collections import OrderedDict
-if sys.version_info.major > 2:
-    from urllib.parse import urlencode
-else:
-    from urllib import urlencode
 import hmac
 import requests
+from requests.models import RequestEncodingMixin as urlencode
 import base64
-
 
 class ZadarmaAPI(object):
 
@@ -49,15 +44,13 @@ class ZadarmaAPI(object):
 
         result = False
         if request_type == 'GET':
-            sorted_dict_params = OrderedDict(sorted(params.items()))
-            params_string = urlencode(sorted_dict_params)
-            request_url = self.__url_api + method + '?' + params_string
-            result = requests.get(request_url, headers={'Authorization': auth_str})
+            sorted_payload = OrderedDict(sorted(params.items()))
+            request_url = self.__url_api + method
+            result = requests.get(request_url, params=sorted_payload, headers={'Authorization': auth_str})
         elif request_type == 'POST':
             result = requests.post(self.__url_api + method, headers={'Authorization': auth_str}, data=params)
         elif request_type == 'PUT':
             result = requests.put(self.__url_api + method, headers={'Authorization': auth_str}, data=params)
-        print("result: " + str(result.text))
         return result.text
 
     def __get_auth_string_for_header(self, method, params):
@@ -66,10 +59,9 @@ class ZadarmaAPI(object):
         :param params: Query params dict
         :return: auth header
         """
-        sorted_dict_params = OrderedDict(sorted(params.items()))
-        params_string = urlencode(sorted_dict_params)
-        md5hash = md5(params_string.encode('utf8')).hexdigest()
-        data = method + params_string + md5hash
+        sorted_payload = urlencode._encode_params(OrderedDict(sorted(params.items())))
+        md5hash = md5(sorted_payload.encode('utf8')).hexdigest()
+        data = method + sorted_payload + md5hash
         hmac_h = hmac.new(self.secret.encode('utf8'), data.encode('utf8'), sha1)
         if sys.version_info.major > 2:
             bts = bytes(hmac_h.hexdigest(), 'utf8')
