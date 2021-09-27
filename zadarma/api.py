@@ -28,7 +28,7 @@ class ZadarmaAPI(object):
         if is_sandbox:
             self.__url_api = 'https://api-sandbox.zadarma.com'
 
-    def call(self, method, params={}, request_type='GET', format='json', is_auth=True):
+    def call(self, method, params=None, request_type='GET', format='json', is_auth=True):
         """
         Function for send API request
         :param method: API method, including version number
@@ -38,6 +38,7 @@ class ZadarmaAPI(object):
         :param is_auth: (True|False)
         :return: response
         """
+        params = {} if params is None else params
         request_type = request_type.upper()
         if request_type not in ['GET', 'POST', 'PUT', 'DELETE']:
             request_type = 'GET'
