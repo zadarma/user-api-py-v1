@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-__version__ = '1.1.0'
+__version__ = '1.1.1'
 import sys
 from hashlib import sha1, md5
 from collections import OrderedDict
@@ -28,7 +28,7 @@ class ZadarmaAPI(object):
         if is_sandbox:
             self.__url_api = 'https://api-sandbox.zadarma.com'
 
-    def call(self, method, params={}, request_type='GET', format='json', is_auth=True):
+    def call(self, method, params=None, request_type='GET', format='json', is_auth=True):
         """
         Function for send API request
         :param method: API method, including version number
@@ -38,8 +38,9 @@ class ZadarmaAPI(object):
         :param is_auth: (True|False)
         :return: response
         """
+        params = params or {}
         request_type = request_type.upper()
-        if request_type not in ['GET', 'POST', 'PUT', 'DELETE']:
+        if request_type not in ['POST', 'PUT', 'DELETE']:
             request_type = 'GET'
         params['format'] = format
         auth_str = None
@@ -71,13 +72,13 @@ class ZadarmaAPI(object):
         parents = list()
         pairs = dict()
 
-        def renderKey(parents):
-            depth, outStr = 0, ''
+        def render_key(parents):
+            depth, out_str = 0, ''
             for x in parents:
                 s = "[%s]" if depth > 0 or isinstance(x, int) else "%s"
-                outStr += s % str(x)
+                out_str += s % str(x)
                 depth += 1
-            return outStr
+            return out_str
 
         def r_urlencode(data):
             if isinstance(data, list) or isinstance(data, tuple):
@@ -91,7 +92,7 @@ class ZadarmaAPI(object):
                     r_urlencode(value)
                     parents.pop()
             else:
-                pairs[renderKey(parents)] = str(data)
+                pairs[render_key(parents)] = str(data)
 
             return pairs
         return urlencode(r_urlencode(data))
